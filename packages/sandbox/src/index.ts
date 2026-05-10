@@ -1,0 +1,11 @@
+export type { SandboxPoolManagerConfig } from "./pool/manager.js";
+export type { PreBootJob } from "./pool/pre-boot.js";
+export type { ReturnDecision } from "./pool/return.js";
+export type { HealthReport } from "./pool/health-check.js";
+export type { SandboxAdapter } from "./adapters/interface.js";
+export type { AgentRunAdapterConfig } from "./adapters/agentrun.js";
+export type { E2BAdapterConfig } from "./adapters/e2b.js";
+export type { RunCodeRequest } from "./exec/run-code.js";
+export type { RunShellRequest } from "./exec/run-shell.js";
+export type { UploadFileRequest } from "./exec/upload-file.js";
+export type { DownloadFileRequest } from "./exec/download-file.js";
