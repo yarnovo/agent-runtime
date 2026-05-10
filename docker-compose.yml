@@ -1,0 +1,18 @@
+services:
+  agent-runtime:
+    build: .
+    image: yarnovo/agent-runtime:dev
+    container_name: agent-runtime
+    ports:
+      - "8080:8080"
+    environment:
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+      DASHSCOPE_MODEL: ${DASHSCOPE_MODEL:-qwen-max}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
