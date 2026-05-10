@@ -1,29 +1,95 @@
 import Fastify from "fastify";
 import sensible from "@fastify/sensible";
-import { registerChatRoute } from "./routes/chat.js";
-import { registerAdminRoutes } from "./routes/admin.js";
-import { channelH5Plugin } from "@agent-runtime/channel-h5";
-import { channelFeishuPlugin } from "@agent-runtime/channel-feishu";
-import { channelWechatPlugin } from "@agent-runtime/channel-wechat";
-import { channelWecomPlugin } from "@agent-runtime/channel-wecom";
-import { channelDingtalkPlugin } from "@agent-runtime/channel-dingtalk";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+/**
+ * agent-runtime daemon · 容器调度器
+ *
+ * 老板 5-11 蓝图: agent-runtime = 容器 daemon 单仓 + Layer 1 runtime hermes CLI.
+ *
+ * 职责 (3 件):
+ *   1. 启 / 停 / list agent 容器 (docker run --name agent-<slug> · 注入 AGENT_SLUG · mount channel-*)
+ *   2. 暴露 GET /health (host 健康检查)
+ *   3. 不 own /chat · /chat 在容器内由 agent 各自 channel 暴露
+ *
+ * 跨 agent 通用 service 走 cli/ (Layer 1 runtime hermes):
+ *   cli/container.ts   docker run / stop / list
+ *   cli/channel-qrcode.ts  生成 channel 接入二维码
+ */
 
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.HOST ?? "0.0.0.0";
 
+const exec = promisify(execFile);
+
+interface ContainerInfo {
+  readonly id: string;
+  readonly name: string;
+  readonly image: string;
+  readonly status: string;
+}
+
+interface StartContainerBody {
+  readonly agent_slug: string;
+  readonly image: string;
+  readonly env?: Record<string, string>;
+  readonly port?: number;
+}
+
+interface StopContainerParams {
+  readonly slug: string;
+}
+
 /**
- * 按 env CHANNEL_ENABLED (逗号分隔) 选 channel plug-in 装载。
- * default `h5` (Phase 1 · 先 web UI)。
- *
- * 例:
- *   CHANNEL_ENABLED=h5,feishu      → 同时挂 web UI + 飞书 webhook
- *   CHANNEL_ENABLED=wechat,wecom   → 关 h5 · 只挂微信 + 企微
+ * docker ps · 列所有 agent-<slug> 容器.
  */
-function getEnabledChannels(): readonly string[] {
-  return (process.env.CHANNEL_ENABLED ?? "h5")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+async function listAgentContainers(): Promise<ContainerInfo[]> {
+  const { stdout } = await exec("docker", [
+    "ps",
+    "--filter",
+    "name=^agent-",
+    "--format",
+    "{{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}",
+  ]);
+  return stdout
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map((line): ContainerInfo => {
+      const [id, name, image, status] = line.split("\t");
+      return {
+        id: id ?? "",
+        name: name ?? "",
+        image: image ?? "",
+        status: status ?? "",
+      };
+    });
+}
+
+/**
+ * docker run agent-<slug> (detached · 容器内由 agent daemon 自跑).
+ */
+async function startAgentContainer(body: StartContainerBody): Promise<{ id: string }> {
+  const args = ["run", "-d", "--name", `agent-${body.agent_slug}`];
+  for (const [k, v] of Object.entries(body.env ?? {})) {
+    args.push("-e", `${k}=${v}`);
+  }
+  args.push("-e", `AGENT_SLUG=${body.agent_slug}`);
+  if (body.port) {
+    args.push("-p", `${body.port}:8080`);
+  }
+  args.push(body.image);
+  const { stdout } = await exec("docker", args);
+  return { id: stdout.trim() };
+}
+
+/**
+ * docker stop + rm agent-<slug>.
+ */
+async function stopAgentContainer(slug: string): Promise<void> {
+  await exec("docker", ["stop", `agent-${slug}`]).catch(() => undefined);
+  await exec("docker", ["rm", `agent-${slug}`]).catch(() => undefined);
 }
 
 export async function buildServer() {
@@ -37,22 +103,40 @@ export async function buildServer() {
 
   app.get("/health", async () => ({ status: "ok" }));
 
-  await registerChatRoute(app);
-  await registerAdminRoutes(app);
+  app.get("/containers", async () => {
+    const list = await listAgentContainers();
+    return { containers: list };
+  });
 
-  const enabled = getEnabledChannels();
-  app.log.info({ channels: enabled }, "channel plug-ins enabled");
+  app.post<{ Body: StartContainerBody }>(
+    "/containers",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["agent_slug", "image"],
+          properties: {
+            agent_slug: { type: "string", minLength: 1 },
+            image: { type: "string", minLength: 1 },
+            env: { type: "object" },
+            port: { type: "number" },
+          },
+        },
+      },
+    },
+    async (req) => {
+      const result = await startAgentContainer(req.body);
+      return result;
+    },
+  );
 
-  if (enabled.includes("h5")) {
-    await app.register(channelH5Plugin, {
-      authApi: process.env.AUTH_API,
-      agentSlug: process.env.AGENT_SLUG,
-    });
-  }
-  if (enabled.includes("feishu")) await app.register(channelFeishuPlugin);
-  if (enabled.includes("wechat")) await app.register(channelWechatPlugin);
-  if (enabled.includes("wecom")) await app.register(channelWecomPlugin);
-  if (enabled.includes("dingtalk")) await app.register(channelDingtalkPlugin);
+  app.delete<{ Params: StopContainerParams }>(
+    "/containers/:slug",
+    async (req) => {
+      await stopAgentContainer(req.params.slug);
+      return { ok: true };
+    },
+  );
 
   return app;
 }
@@ -61,7 +145,7 @@ async function main(): Promise<void> {
   const app = await buildServer();
   try {
     await app.listen({ port: PORT, host: HOST });
-    app.log.info(`agent-runtime listening on http://${HOST}:${PORT}`);
+    app.log.info(`agent-runtime daemon listening on http://${HOST}:${PORT}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);
