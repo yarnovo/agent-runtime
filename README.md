@@ -96,11 +96,30 @@ agent-runtime/
 │   │       ├── tracer/{llm-call,tool-call,sandbox-call}.ts
 │   │       ├── cost/{token-cost,runtime-cost}.ts
 │   │       └── index.ts
-│   └── channel-bridge/                      @agent-runtime/channel-bridge · webhook normalize
-│       └── src/
-│           ├── webhook/dispatcher.ts
-│           ├── adapters/interface.ts
-│           └── index.ts
+│   ├── channel-bridge/                      @agent-runtime/channel-bridge · webhook normalize
+│   │   └── src/
+│   │       ├── webhook/dispatcher.ts
+│   │       ├── adapters/interface.ts
+│   │       └── index.ts
+│   ├── channel-h5/                          @agent-runtime/channel-h5 · web UI plug-in (REQ-012)
+│   │   └── src/
+│   │       ├── server.ts                    fastify register web UI route
+│   │       ├── routes/chat.ts               SSE endpoint · forward to core
+│   │       ├── ui/index.html                stub SPA · 未来 fold akong-hr/apps/web
+│   │       └── index.ts
+│   ├── channel-feishu/                      @agent-runtime/channel-feishu · 飞书 webhook
+│   │   └── src/
+│   │       ├── server.ts
+│   │       ├── webhook/{verify,receive}.ts
+│   │       ├── api/{access-token,send-message,qr-code}.ts
+│   │       ├── adapter/to-core.ts
+│   │       └── index.ts
+│   ├── channel-wechat/                      @agent-runtime/channel-wechat · 微信公众号 webhook
+│   │   └── src/{server,webhook,api,adapter,index}.ts (同 feishu 结构)
+│   ├── channel-wecom/                       @agent-runtime/channel-wecom · 企业微信 webhook
+│   │   └── src/{server,webhook,api,adapter,index}.ts (同 feishu 结构)
+│   └── channel-dingtalk/                    @agent-runtime/channel-dingtalk · 钉钉 webhook
+│       └── src/{server,webhook,api,adapter,index}.ts (同 feishu 结构)
 │
 ├── pnpm-workspace.yaml                      apps/* + packages/*
 ├── tsconfig.base.json                       共享 compilerOptions
@@ -108,7 +127,7 @@ agent-runtime/
 ├── package.json                             root scripts: build / typecheck / test / dev
 ├── Dockerfile                               2-stage · pnpm workspace 真 build
 ├── docker-compose.yml
-├── issues/                                  仓内 issue · REQ-001..011
+├── issues/                                  仓内 issue · REQ-001..012
 └── README.md
 ```
 
@@ -136,9 +155,9 @@ pnpm dev          # 真 tsx watch · 真 hot reload · 走 apps/daemon/src/serve
 ### 2. 跑测试 / 类型 / 构建
 
 ```bash
-pnpm typecheck    # 真 tsc --noEmit · 全 12 workspace
+pnpm typecheck    # 真 tsc --noEmit · 全 17 workspace
 pnpm test         # 真 vitest · daemon 2 case · packages 都 passWithNoTests
-pnpm build        # 真 tsc · 全 12 workspace 真出 dist
+pnpm build        # 真 tsc · 全 17 workspace 真出 dist
 ```
 
 ### 3. Docker 跑
@@ -157,6 +176,23 @@ curl -N -X POST http://localhost:8080/chat \
   -H "Content-Type: application/json" \
   -d '{"msg":"你好"}'
 ```
+
+### 5. channel plug-in (REQ-012 · OpenClaw pattern)
+
+daemon 按 env `CHANNEL_ENABLED` (逗号分隔 · default `h5`) 选 channel plug-in:
+
+```bash
+# 默认 · 只挂 web UI
+docker run -e DASHSCOPE_API_KEY=sk-xxx agent-runtime:dev
+
+# web UI + 飞书 webhook
+docker run -e DASHSCOPE_API_KEY=sk-xxx -e CHANNEL_ENABLED=h5,feishu agent-runtime:dev
+
+# 全开 (h5 + 4 IM channel)
+docker run -e DASHSCOPE_API_KEY=sk-xxx -e CHANNEL_ENABLED=h5,feishu,wechat,wecom,dingtalk agent-runtime:dev
+```
+
+5 channel-* package Phase 0.5 真 stub · 各厂 SDK 真 implement 拆 Phase 4 各自 task (REQ-013..017 · 待建)。
 
 预期 SSE 流:
 
