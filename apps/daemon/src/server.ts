@@ -43,7 +43,12 @@ export async function buildServer() {
   const enabled = getEnabledChannels();
   app.log.info({ channels: enabled }, "channel plug-ins enabled");
 
-  if (enabled.includes("h5")) await app.register(channelH5Plugin);
+  if (enabled.includes("h5")) {
+    await app.register(channelH5Plugin, {
+      authApi: process.env.AUTH_API,
+      agentSlug: process.env.AGENT_SLUG,
+    });
+  }
   if (enabled.includes("feishu")) await app.register(channelFeishuPlugin);
   if (enabled.includes("wechat")) await app.register(channelWechatPlugin);
   if (enabled.includes("wecom")) await app.register(channelWecomPlugin);
