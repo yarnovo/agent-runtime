@@ -11,6 +11,11 @@ COPY apps/daemon/package.json ./apps/daemon/
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/budget/package.json ./packages/budget/
 COPY packages/channel-bridge/package.json ./packages/channel-bridge/
+COPY packages/channel-dingtalk/package.json ./packages/channel-dingtalk/
+COPY packages/channel-feishu/package.json ./packages/channel-feishu/
+COPY packages/channel-h5/package.json ./packages/channel-h5/
+COPY packages/channel-wechat/package.json ./packages/channel-wechat/
+COPY packages/channel-wecom/package.json ./packages/channel-wecom/
 COPY packages/core/package.json ./packages/core/
 COPY packages/lifecycle/package.json ./packages/lifecycle/
 COPY packages/llm/package.json ./packages/llm/
@@ -42,6 +47,11 @@ COPY apps/daemon/package.json ./apps/daemon/
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/budget/package.json ./packages/budget/
 COPY packages/channel-bridge/package.json ./packages/channel-bridge/
+COPY packages/channel-dingtalk/package.json ./packages/channel-dingtalk/
+COPY packages/channel-feishu/package.json ./packages/channel-feishu/
+COPY packages/channel-h5/package.json ./packages/channel-h5/
+COPY packages/channel-wechat/package.json ./packages/channel-wechat/
+COPY packages/channel-wecom/package.json ./packages/channel-wecom/
 COPY packages/core/package.json ./packages/core/
 COPY packages/lifecycle/package.json ./packages/lifecycle/
 COPY packages/llm/package.json ./packages/llm/

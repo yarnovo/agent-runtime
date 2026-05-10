@@ -10,13 +10,14 @@
 | [REQ-002](requirements/REQ-002-nas-persistence.md) | 2 | NAS 持久 conversation history | open |
 | [REQ-003](requirements/REQ-003-ecs-deploy.md) | 2.5 | ECS deploy + 自定义域名 | open |
 | [REQ-004](requirements/REQ-004-multi-agent-routing.md) | 3 | multi-agent routing | **dropped** |
-| [REQ-005](requirements/REQ-005-multi-channel-webhook.md) | 4 | multi-channel webhook (iLink 1st) | open |
+| [REQ-005](requirements/REQ-005-multi-channel-webhook.md) | 1 | multi-channel webhook · fold packages/channel-* | in-progress |
 | [REQ-006](requirements/REQ-006-sandbox-integration.md) | 5 | sandbox 集成 · warm pool short-lived | open |
 | [REQ-007](requirements/REQ-007-self-modify.md) | 6 | self-modify · LLM 写 skill (NAS) | open |
 | [REQ-008](requirements/REQ-008-snapshot-rollback.md) | 7 | snapshot / rollback lifecycle | open |
 | [REQ-009](requirements/REQ-009-auth-oidc-client.md) | 1 | OIDC client 接 platform-sso | open |
 | [REQ-010](requirements/REQ-010-budget-token-quota.md) | 1 | per-user token budget | open |
 | [REQ-011](requirements/REQ-011-monorepo-refactor.md) | 0.5 | monorepo 重构 · 11 packages | in-progress |
+| [REQ-012](requirements/REQ-012-channel-packages-stub.md) | 0.5 | channel-* packages stub · OpenClaw plug-in | in-progress |
 
 ## defects (DEFECT)
 
