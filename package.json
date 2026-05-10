@@ -1,21 +1,15 @@
 {
   "name": "@yarnovo/agent-runtime",
-  "version": "0.1.0",
-  "description": "阿空 agent runtime · PI lib wire · multi-channel routing · sandbox 集成 · ECS+Docker daemon",
+  "version": "0.2.0",
+  "private": true,
+  "description": "阿空 agent runtime · monorepo · 1 daemon app + 11 packages · 极致细分目录架构",
   "type": "module",
-  "main": "dist/server.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc --noEmit",
-    "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js",
-    "test": "vitest run"
-  },
-  "dependencies": {
-    "@earendil-works/pi-agent-core": "^0.74.0",
-    "@earendil-works/pi-ai": "^0.74.0",
-    "@fastify/sensible": "^6.0.4",
-    "fastify": "^5.8.5"
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "dev": "pnpm --filter @agent-runtime/daemon dev",
+    "start": "pnpm --filter @agent-runtime/daemon start"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",

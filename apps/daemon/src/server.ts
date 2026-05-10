@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import sensible from "@fastify/sensible";
 import { registerChatRoute } from "./routes/chat.js";
+import { registerAdminRoutes } from "./routes/admin.js";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.HOST ?? "0.0.0.0";
@@ -17,6 +18,7 @@ export async function buildServer() {
   app.get("/health", async () => ({ status: "ok" }));
 
   await registerChatRoute(app);
+  await registerAdminRoutes(app);
 
   return app;
 }

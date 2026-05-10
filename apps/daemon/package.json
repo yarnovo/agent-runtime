@@ -1,0 +1,32 @@
+{
+  "name": "@agent-runtime/daemon",
+  "version": "0.2.0",
+  "private": true,
+  "description": "agent-runtime daemon · fastify entry · pipeline + routes",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@agent-runtime/auth": "workspace:*",
+    "@agent-runtime/budget": "workspace:*",
+    "@agent-runtime/channel-bridge": "workspace:*",
+    "@agent-runtime/core": "workspace:*",
+    "@agent-runtime/lifecycle": "workspace:*",
+    "@agent-runtime/llm": "workspace:*",
+    "@agent-runtime/observability": "workspace:*",
+    "@agent-runtime/sandbox": "workspace:*",
+    "@agent-runtime/session": "workspace:*",
+    "@agent-runtime/storage": "workspace:*",
+    "@agent-runtime/tools": "workspace:*",
+    "@earendil-works/pi-agent-core": "^0.74.0",
+    "@earendil-works/pi-ai": "^0.74.0",
+    "@fastify/sensible": "^6.0.4",
+    "fastify": "^5.8.5"
+  }
+}
