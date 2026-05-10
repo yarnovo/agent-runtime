@@ -1,8 +1,8 @@
 {
   "name": "@yarnovo/agent-runtime",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "阿空 agent runtime · monorepo · 1 daemon app + 11 packages · 极致细分目录架构",
+  "description": "agent-runtime · 容器 daemon 单仓 + Layer 1 runtime hermes CLI",
   "type": "module",
   "scripts": {
     "build": "pnpm -r run build",
