@@ -1,318 +1,118 @@
 # agent-runtime
 
-阿空 agent runtime · monorepo · 1 daemon app + 11 packages · 极致细分目录架构。
+容器 daemon 单仓 + Layer 1 runtime hermes CLI.
 
-> Phase 0.5 (REQ-011) · monorepo + 11 packages stub · keep PI hello-world working · 后续各 package 真各 phase 真填业务 logic。
+老板 5-11 蓝图: agent-runtime = 容器调度器 + 跨 agent 通用 service. 真业务 (channel / agent 人格 / SOUL) 不在本仓.
 
 ---
 
-## 真目录 (架构主图 · 老板 ls 一眼看到)
+## 真目录
 
 ```
 agent-runtime/
 ├── apps/
-│   └── daemon/                              fastify HTTP entry
-│       ├── package.json                     @agent-runtime/daemon
+│   └── daemon/                       fastify 容器调度器
+│       ├── package.json              @agent-runtime/daemon
 │       ├── tsconfig.json
-│       ├── vitest.config.ts
-│       ├── src/
-│       │   ├── server.ts                    fastify 启动 + register routes
-│       │   ├── agent.ts                     hardcode SOUL · Phase 0 临时 · 真后续切 packages/core
-│       │   ├── llm.ts                       DashScope Model · Phase 0 临时 · 真后续切 packages/llm
-│       │   ├── pipeline/                    ⭐ 执行 pipeline · 1 step 1 file (stub)
-│       │   │   ├── context.ts               PipelineContext 共享类型
-│       │   │   ├── 01-auth.ts               TODO REQ-009 · 真接 packages/auth
-│       │   │   ├── 02-tenant-resolve.ts
-│       │   │   ├── 03-budget-check.ts       TODO REQ-010 · 真接 packages/budget
-│       │   │   ├── 04-session-fetch.ts      TODO · 真接 packages/session
-│       │   │   ├── 05-context-load.ts       TODO REQ-001 · 真接 packages/storage
-│       │   │   ├── 06-sandbox-prepare.ts    TODO REQ-006 · 真接 packages/sandbox
-│       │   │   ├── 07-llm-call.ts           TODO · 真接 packages/llm
-│       │   │   └── 08-persist.ts            TODO REQ-002 · 真接 packages/storage
-│       │   └── routes/
-│       │       ├── chat.ts                  ✅ Phase 0 hello-world · POST /chat (SSE)
-│       │       └── admin.ts                 stub · 后续挂 /admin/sandboxes 等
-│       └── tests/
-│           └── chat.test.ts                 vitest · faux provider · 2 case
+│       └── src/
+│           └── server.ts             启/停/list agent 容器 · GET /health · 不 own /chat
 │
-├── packages/                                11 packages
-│   ├── core/                                @agent-runtime/core · PI session 包装
-│   │   └── src/
-│   │       ├── session.ts
-│   │       ├── agent.ts
-│   │       └── index.ts
-│   ├── auth/                                @agent-runtime/auth · TODO REQ-009 OIDC
-│   │   └── src/
-│   │       ├── oidc/{client,discovery,pkce}.ts
-│   │       ├── cookie/{verify,set}.ts
-│   │       ├── jwt/verify.ts
-│   │       └── index.ts
-│   ├── budget/                              @agent-runtime/budget · TODO REQ-010 token quota
-│   │   └── src/
-│   │       ├── quota/{token-budget,rate-limit}.ts
-│   │       ├── tracking/{cost-track,per-user-meter}.ts
-│   │       ├── guard/runaway-guard.ts
-│   │       └── index.ts
-│   ├── session/                             @agent-runtime/session · session 生命周期
-│   │   └── src/
-│   │       ├── store/{in-memory,redis}.ts
-│   │       ├── lifecycle/{create,resume,delete}.ts
-│   │       ├── tree/{fork,rewind}.ts
-│   │       └── index.ts
-│   ├── llm/                                 @agent-runtime/llm · LLM provider
-│   │   └── src/
-│   │       ├── providers/{interface,dashscope,openai,claude}.ts
-│   │       ├── streaming/{sse,retry}.ts
-│   │       ├── registry.ts
-│   │       └── index.ts
-│   ├── storage/                             @agent-runtime/storage · NAS / OSS / RDS
-│   │   └── src/
-│   │       ├── nas/{conversation,skill,data}.ts
-│   │       ├── oss/{snapshot,avatar,tts-mp3}.ts
-│   │       ├── rds/user-meta.ts
-│   │       └── index.ts
-│   ├── sandbox/                             @agent-runtime/sandbox · TODO REQ-006 warm pool
-│   │   └── src/
-│   │       ├── pool/{manager,pre-boot,return,health-check}.ts
-│   │       ├── adapters/{interface,agentrun,e2b}.ts
-│   │       ├── exec/{run-code,run-shell,upload-file,download-file}.ts
-│   │       └── index.ts
-│   ├── lifecycle/                           @agent-runtime/lifecycle · TODO REQ-008
-│   │   └── src/
-│   │       ├── ship.ts
-│   │       ├── hire.ts
-│   │       ├── evolve.ts
-│   │       ├── snapshot.ts
-│   │       ├── restore.ts
-│   │       └── index.ts
-│   ├── tools/                               @agent-runtime/tools · agent 内置 / 扩展 tool
-│   │   └── src/
-│   │       ├── base/{read,write,edit,bash}.ts
-│   │       ├── ext/{sandbox-run,nas-read,nas-write,sms-send,sso-resolve}.ts
-│   │       └── index.ts
-│   ├── observability/                       @agent-runtime/observability · log + trace + cost
-│   │   └── src/
-│   │       ├── logger/{json,correlation-id}.ts
-│   │       ├── tracer/{llm-call,tool-call,sandbox-call}.ts
-│   │       ├── cost/{token-cost,runtime-cost}.ts
-│   │       └── index.ts
-│   ├── channel-bridge/                      @agent-runtime/channel-bridge · webhook normalize
-│   │   └── src/
-│   │       ├── webhook/dispatcher.ts
-│   │       ├── adapters/interface.ts
-│   │       └── index.ts
-│   ├── channel-h5/                          @agent-runtime/channel-h5 · web UI plug-in (REQ-012)
-│   │   └── src/
-│   │       ├── server.ts                    fastify register web UI route
-│   │       ├── routes/chat.ts               SSE endpoint · forward to core
-│   │       ├── ui/index.html                stub SPA · 未来 fold akong-hr/apps/web
-│   │       └── index.ts
-│   ├── channel-feishu/                      @agent-runtime/channel-feishu · 飞书 webhook
-│   │   └── src/
-│   │       ├── server.ts
-│   │       ├── webhook/{verify,receive}.ts
-│   │       ├── api/{access-token,send-message,qr-code}.ts
-│   │       ├── adapter/to-core.ts
-│   │       └── index.ts
-│   ├── channel-wechat/                      @agent-runtime/channel-wechat · 微信公众号 webhook
-│   │   └── src/{server,webhook,api,adapter,index}.ts (同 feishu 结构)
-│   ├── channel-wecom/                       @agent-runtime/channel-wecom · 企业微信 webhook
-│   │   └── src/{server,webhook,api,adapter,index}.ts (同 feishu 结构)
-│   └── channel-dingtalk/                    @agent-runtime/channel-dingtalk · 钉钉 webhook
-│       └── src/{server,webhook,api,adapter,index}.ts (同 feishu 结构)
+├── cli/                              ⭐ Layer 1 runtime hermes (TS 真可执行)
+│   ├── container.ts                  docker run / stop / list (跨 agent 通用)
+│   ├── channel-qrcode.ts             生成 channel 接入二维码 (微信 / 飞书 / 钉钉 / 企微)
+│   ├── package.json                  @agent-runtime/cli · bin 字段真注册
+│   └── tsconfig.json
 │
-├── pnpm-workspace.yaml                      apps/* + packages/*
-├── tsconfig.base.json                       共享 compilerOptions
-├── tsconfig.json                            root noEmit (workspace 各自 tsconfig)
-├── package.json                             root scripts: build / typecheck / test / dev
-├── Dockerfile                               2-stage · pnpm workspace 真 build
-├── docker-compose.yml
-├── issues/                                  仓内 issue · REQ-001..012
-└── README.md
+├── Dockerfile                        daemon 镜像
+├── docker-compose.yml                local dev
+├── package.json                      workspace root (apps/* + cli)
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+└── issues/requirements/
+    ├── REQ-003-ecs-deploy.md         (待 phase 3 deploy)
+    ├── REQ-005-multi-channel-webhook.md
+    ├── REQ-011-monorepo-refactor.md  (已 obsolete · 5-11 反向重构)
+    ├── REQ-012-channel-packages-stub.md  (已 obsolete · 5-11 拆出独立仓)
+    ├── REQ-013-channel-h5-fold-akong-hr.md  (已 obsolete · 5-11 拆出)
+    └── REQ-014-extract-channel-repos.md ⭐ 5-11 大手术
 ```
 
----
+## 角色
 
-## Quick Start
+```
+老板/lead
+  │ akong-cli agent-add xiaoxi
+  ↓
+agents/xiaoxi/cli/install (Layer 2 agent hermes)
+  │ 调
+  ↓
+agent-runtime/cli/container.ts start xiaoxi <image> 8080 (Layer 1 runtime hermes)
+  │ docker run
+  ↓
+agent-runtime/apps/daemon (容器 host 内 · /health + /containers REST)
+  ↓
+容器内 agent daemon 起 · mount channel-h5/wechat/feishu/...
+```
 
-### 0. 前置
+## channel 仓
 
-- Node 24+ (推荐用 `nvm use`)
-- pnpm 10+ (`corepack enable && corepack prepare pnpm@10.0.0 --activate`)
-- Docker 24+ (跑容器时)
-- 阿里云 DashScope API Key (https://dashscope.console.aliyun.com/apiKey)
+5 channel 已拆到各自独立仓 (REQ-014 · 5-11 大手术):
 
-### 1. 装依赖 + 跑 dev
+| channel | 仓 | 状态 |
+|---|---|---|
+| channel-h5 | yarnovo/channel-h5 | (archived · 待老板 unarchive 后 PR refactor) |
+| channel-wechat | yarnovo/channel-wechat | init done |
+| channel-feishu | yarnovo/channel-feishu | init done |
+| channel-dingtalk | yarnovo/channel-dingtalk | init done |
+| channel-wecom | yarnovo/channel-wecom | init done |
+| channel-ilink | yarnovo/weixin-ilink-channel | (老仓 · pattern 参考) |
+
+每个 channel: 接 webhook → normalize → POST agent endpoint → SSE 转发回.
+
+## 容器 API
+
+```
+GET    /health                  → { status: "ok" }
+GET    /containers              → { containers: [{ id, name, image, status }] }
+POST   /containers              body: { agent_slug, image, env?, port? } → { id }
+DELETE /containers/:slug        → { ok: true }
+```
+
+容器自身 /chat 不在本仓 · 由容器内 agent + 其 channel-* 各自暴露.
+
+## CLI
 
 ```bash
-cp .env.example .env
-# 编辑 .env 填 DASHSCOPE_API_KEY
+# 容器
+tsx cli/container.ts list
+tsx cli/container.ts start xiaoxi yarnovo/xiaoxi:latest 8080
+tsx cli/container.ts stop xiaoxi
 
+# channel 二维码
+tsx cli/channel-qrcode.ts wechat xiaoxi
+tsx cli/channel-qrcode.ts feishu interviewer
+```
+
+## 本地跑
+
+```bash
 pnpm install
-pnpm dev          # 真 tsx watch · 真 hot reload · 走 apps/daemon/src/server.ts
+pnpm --filter @agent-runtime/daemon dev      # daemon localhost:8080
+pnpm --filter @agent-runtime/daemon build
+pnpm --filter @agent-runtime/daemon start
 ```
 
-### 2. 跑测试 / 类型 / 构建
+## docker
 
 ```bash
-pnpm typecheck    # 真 tsc --noEmit · 全 17 workspace
-pnpm test         # 真 vitest · daemon 2 case · packages 都 passWithNoTests
-pnpm build        # 真 tsc · 全 17 workspace 真出 dist
+docker build -t agent-runtime .
+docker run --rm -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock agent-runtime
 ```
 
-### 3. Docker 跑
+注意: daemon 调 docker · 需 mount docker socket.
 
-```bash
-DASHSCOPE_API_KEY=sk-xxx docker compose up --build
-# 或
-docker build -t agent-runtime:dev .
-docker run --rm -p 8080:8080 -e DASHSCOPE_API_KEY=sk-xxx agent-runtime:dev
-```
+## 来源
 
-### 4. 调 chat endpoint
-
-```bash
-curl -N -X POST http://localhost:8080/chat \
-  -H "Content-Type: application/json" \
-  -d '{"msg":"你好"}'
-```
-
-### 5. channel plug-in (REQ-012 · OpenClaw pattern)
-
-daemon 按 env `CHANNEL_ENABLED` (逗号分隔 · default `h5`) 选 channel plug-in:
-
-```bash
-# 默认 · 只挂 web UI
-docker run -e DASHSCOPE_API_KEY=sk-xxx agent-runtime:dev
-
-# web UI + 飞书 webhook
-docker run -e DASHSCOPE_API_KEY=sk-xxx -e CHANNEL_ENABLED=h5,feishu agent-runtime:dev
-
-# 全开 (h5 + 4 IM channel)
-docker run -e DASHSCOPE_API_KEY=sk-xxx -e CHANNEL_ENABLED=h5,feishu,wechat,wecom,dingtalk agent-runtime:dev
-```
-
-5 channel-* package Phase 0.5 真 stub · 各厂 SDK 真 implement 拆 Phase 4 各自 task (REQ-013..017 · 待建)。
-
-预期 SSE 流:
-
-```
-event: token
-data: {"text":"你"}
-
-event: token
-data: {"text":"好"}
-
-event: done
-data: {}
-```
-
----
-
-## API
-
-### POST /chat
-
-**Request:** `{ "msg": "你好" }`
-
-**Response:** `text/event-stream`
-
-| event | data | 说明 |
-|-------|------|------|
-| `token` | `{ "text": "..." }` | 1 chunk 文本增量 |
-| `tool_call` | `{ "tool": "X", "args": {...} }` | LLM 发起 tool call (Phase 0 hardcode 无 tool) |
-| `tool_result` | `{ "tool": "X", "result": {...}, "isError": false }` | tool 执行结果 |
-| `error` | `{ "message": "..." }` | 出错 |
-| `done` | `{}` | 流结束 |
-
-### GET /health
-
-返 `{"status":"ok"}` · 给 docker / k8s liveness probe。
-
-### /admin/* (stub · 未挂)
-
-留待 packages/observability + packages/sandbox 接入后真起。
-
----
-
-## 执行 pipeline (8 step · 1 step 1 file)
-
-```
-Auth(REQ-009) → Tenant → Budget(REQ-010) → Session → Context(REQ-001) → Sandbox(REQ-006) → LLM → Persist(REQ-002)
-```
-
-每 step 真签名 `(ctx: PipelineContext) => Promise<PipelineContext>` · stub 真直接 pass-through · 真后续按 REQ 真填。
-
----
-
-## UAT 测试用例 (老板手机自跑)
-
-> 假设 docker compose 已起在 localhost:8080。
-
-### UAT-1 · 健康检查
-
-```bash
-curl http://localhost:8080/health
-```
-
-期望: `{"status":"ok"}`
-
-### UAT-2 · 1 句对话
-
-```bash
-curl -N -X POST http://localhost:8080/chat \
-  -H "Content-Type: application/json" \
-  -d '{"msg":"你好"}'
-```
-
-期望:
-- HTTP 200
-- 看到至少 1 个 `event: token`
-- 看到 1 个 `event: done`
-- 没有 `event: error`
-
-### UAT-3 · 空 msg 拒绝
-
-```bash
-curl -X POST http://localhost:8080/chat \
-  -H "Content-Type: application/json" \
-  -d '{"msg":""}'
-```
-
-期望: HTTP 400 · body 含 schema 错误。
-
-### UAT-4 · 没 API Key 友好失败
-
-```bash
-docker run --rm -p 8080:8080 yarnovo/agent-runtime:dev   # 不带 -e DASHSCOPE_API_KEY
-```
-
-然后跑 UAT-2 · 期望 SSE 收到 `event: error` (上游 401 / API Key 未设置)。
-
----
-
-## Phase Roadmap
-
-| Phase | 范围 | 仓内 issue |
-|-------|------|------------|
-| **0** ✅ | PoC · PI hello-world · hardcode SOUL · in-memory · 本地 docker run | (init) |
-| **0.5** ✅ | monorepo + 11 packages stub · pipeline 8 step | REQ-011 |
-| 1 | SOUL.md dynamic load · agents/<X>/soul.md | REQ-001 |
-| 1 | OIDC client 接 platform-sso · pipeline 01-auth | REQ-009 |
-| 1 | per-user token budget · pipeline 03-budget-check | REQ-010 |
-| 2 | NAS 持久 conversation history | REQ-002 |
-| 2.5 | ECS deploy + 自定义域名 | REQ-003 |
-| 3 | ~~multi-agent routing~~ (砍 · 1 ECS 1 agent) | REQ-004 (dropped) |
-| 4 | multi-channel webhook (iLink BOT 1st) | REQ-005 |
-| 5 | sandbox 集成 · warm pool short-lived | REQ-006 |
-| 6 | self-modify · LLM 写 skill (NAS) | REQ-007 |
-| 7 | snapshot / rollback (lifecycle 5 stage) | REQ-008 |
-
----
-
-## 不做 (Phase 0.5 本 PR · 留 follow-up REQ)
-
-- ❌ 真 implement business logic (留 REQ-001 / 009 / 010 等真各自 task)
-- ❌ channel-h5 (单独仓 / 单独 task)
-- ❌ agents/X soul/hermes/tools (单独 task)
-- ❌ ECS deploy (REQ-003)
+- 2026-05-11 老板蓝图 (~/.claude/repos/skills/blueprint/data/target.md)
+- audit (~/.claude/repos/skills/blueprint/data/audit-2026-05-11.md · #1 段)
+- REQ-014 (本仓 issues/requirements/) · big-shrink phase 1 + phase 2

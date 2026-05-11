@@ -1,8 +1,8 @@
 {
   "name": "@agent-runtime/daemon",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "agent-runtime daemon · fastify entry · pipeline + routes",
+  "description": "agent-runtime daemon · 容器调度器 (启/停/list agent 容器)",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
@@ -10,27 +10,9 @@
     "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@agent-runtime/auth": "workspace:*",
-    "@agent-runtime/budget": "workspace:*",
-    "@agent-runtime/channel-bridge": "workspace:*",
-    "@agent-runtime/channel-dingtalk": "workspace:*",
-    "@agent-runtime/channel-feishu": "workspace:*",
-    "@agent-runtime/channel-h5": "workspace:*",
-    "@agent-runtime/channel-wechat": "workspace:*",
-    "@agent-runtime/channel-wecom": "workspace:*",
-    "@agent-runtime/core": "workspace:*",
-    "@agent-runtime/lifecycle": "workspace:*",
-    "@agent-runtime/llm": "workspace:*",
-    "@agent-runtime/observability": "workspace:*",
-    "@agent-runtime/sandbox": "workspace:*",
-    "@agent-runtime/session": "workspace:*",
-    "@agent-runtime/storage": "workspace:*",
-    "@agent-runtime/tools": "workspace:*",
-    "@earendil-works/pi-agent-core": "^0.74.0",
-    "@earendil-works/pi-ai": "^0.74.0",
     "@fastify/sensible": "^6.0.4",
     "fastify": "^5.8.5"
   }

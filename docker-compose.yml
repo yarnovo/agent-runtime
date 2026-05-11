@@ -6,9 +6,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
-      DASHSCOPE_MODEL: ${DASHSCOPE_MODEL:-qwen-max}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+    # daemon 调 docker · 真 mount socket
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:8080/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
